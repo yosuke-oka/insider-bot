@@ -31,8 +31,8 @@ controller.hears(['ping'], 'direct_message, direct_mention, mention', (bot, mess
 controller.hears(['game init'], 'mention, direct_mention', (bot, message) => {
     bot.api.channels.info({ channel: 'C8JMND865' }, (err, response) => {
         const userIds: string[] = shuffle(difference(response.channel.members, [botUserId])) // bot自身を除きたい
-        const players = initializePlayers(userIds)
-        players.forEach(p => {
+        const game = initializeGame(userIds) // TODO: botkit.storageつかう
+        game.allPlayers.forEach(p => {
             bot.startPrivateConversation({ user: p.userId }, (err, convo) => {
                 if (!err && convo) {
                     convo.say(`あなたは${p.role}です。`)
@@ -42,22 +42,37 @@ controller.hears(['game init'], 'mention, direct_mention', (bot, message) => {
                 }
             })
         })
+        bot.reply(message, `マスターは<@${game.master.userId}>さんです！`)
     })
 })
 
+controller.hears(['timer start'], 'mention, direct_mention', (bot, message) => {
+    bot.reply(message, '残り5分です…')
+})
+
+controller.hears(['game end'], 'mention, direct_mention', (bot, message) => {
+    bot.reply(message, 'todo')
+})
 
 interface Player {
     userId: string
     role: string //'commons' | 'master' | 'insider'
     answer?: string
 }
+interface Game {
+    allPlayers: Player[]
+    master: Player
+    insider: Player
+    answer: string
+}
 
-const initializePlayers = (userIds: string[]): Player[] => {
-    const answer = sample(['お正月', 'ハッカソン', '忘年会']) // TODO: お題
+const initializeGame = (userIds: string[]): Game => {
+    const answer = sample(['お正月', 'ハッカソン', '忘年会']) || "" // TODO: お題
     const master = { userId: userIds[0], role: 'master', answer: answer }
     const insider = { userId: userIds[1], role: 'insider', answer: answer }
     const commons = userIds.slice(2).map(id => (
         { userId: id, role: 'commons' }
     ))
-    return commons.concat([master, insider])
+    const allPlayers: Player[] = commons.concat([master, insider])
+    return { allPlayers, master, insider, answer }
 }
