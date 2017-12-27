@@ -35,8 +35,10 @@ controller.hears(['game init'], 'mention, direct_mention', (bot, message) => {
         players.forEach(p => {
             bot.startPrivateConversation({ user: p.userId }, (err, convo) => {
                 if (!err && convo) {
-                    convo.say(p.role)
-                    if (p.answer) convo.say(p.answer)
+                    convo.say(`あなたは${p.role}です。`)
+                    if (p.answer) {
+                        convo.say(`今回のお題は「${p.answer}」です。`)
+                    }
                 }
             })
         })
@@ -51,7 +53,7 @@ interface Player {
 }
 
 const initializePlayers = (userIds: string[]): Player[] => {
-    const answer = sample(['お正月', 'ハッカソン', '忘年会'])
+    const answer = sample(['お正月', 'ハッカソン', '忘年会']) // TODO: お題
     const master = { userId: userIds[0], role: 'master', answer: answer }
     const insider = { userId: userIds[1], role: 'insider', answer: answer }
     const commons = userIds.slice(2).map(id => (
