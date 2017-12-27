@@ -1,5 +1,5 @@
 import * as Botkit from 'botkit'
-import { difference } from 'lodash'
+import { difference, shuffle, sample } from 'lodash'
 
 declare let process: {
     env: {
@@ -30,14 +30,14 @@ controller.hears(['ping'], 'direct_message, direct_mention, mention', (bot, mess
 // todo: async/await
 controller.hears(['game init'], 'mention, direct_mention', (bot, message) => {
     bot.api.channels.info({channel: 'C8JMND865'}, (err, response) => {
-        const userIds: string[] = difference(response.channel.members, [botUserId]) // bot自身を除きたい
-        const players: Player[] = userIds.map(id => {
-            return {
-                userId: id,
-                role: 'master',
-                answer: 'ハッカソン'
-            }
-        })
+        const userIds: string[] = shuffle(difference(response.channel.members, [botUserId])) // bot自身を除きたい
+        const answer = sample(['お正月', 'ハッカソン', '忘年会'])
+        const master = { userId: userIds[0], role: 'master', answer: answer}
+        const insider = { userId: userIds[1], role: 'insider', answer: answer}
+        const commons = userIds.slice(2).map(id => (
+            { userId: id, role: 'commons'}
+        ))
+        const players: Player[] = commons.concat([master, insider])
          players.forEach(p => {
              bot.startPrivateConversation({user: p.userId}, (err, convo) => {
                  if (!err && convo) {
@@ -52,7 +52,7 @@ controller.hears(['game init'], 'mention, direct_mention', (bot, message) => {
 
 interface Player {
     userId: string
-    role: string //'commoner' | 'master' | 'insider'
+    role: string //'commons' | 'master' | 'insider'
     answer?: string
 }
 
